@@ -3,18 +3,27 @@
 
 function extractEmails (text)
 {
-    return text.match(/\"email\"\:\"+([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)+\"/gi);
+    return text.match(/\"email\"\:\"+([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)+\"/g);
 }
 function extractName (text)
 {
-    return text.match(/\"name\"\:\"+[^\w\s]+\"/gi);
+    return text.match(/\"name\"\:\"+[^\w\s]+\"/g);
 }
 function extractFeedback (text)
 {
-    return text.match(/\"feedback\"\:\"+[^\w\s]+\"/gi);
+    //return text.match(/\"feedback\"\:\"+[^\w\s]+\"/g);
+    return text.match(/\"feedback\"\:\"(.*)"\,/);
 }
+
+function sendmail(NAME, MAIL, SUBJECT, MESSAGE) {
+   var MAIL = 'superwinter@gmailicom';
+   var SUBJECT = '親愛的使用者 '+ NAME +' 您好';
+   window.location.href = 'mailto:'+ MAIL +'?subject='+SUBJECT+'&body='+MESSAGE; 
+}
+
 function DOMtoString(document_root) {
-    var html = '',
+    var html = '';
+    var FEEDBACK = '';
     node = document_root.firstChild;
     while (node) {
         switch (node.nodeType) {
@@ -39,18 +48,23 @@ function DOMtoString(document_root) {
     }
     var NAME = extractName(html);
     var EMAIL = extractEmails(html);
-    var FEEDBACK = extractFeedback(html);
+    FEEDBACK = extractFeedback(html);
     NAME = NAME[0].replace(/\"/g,"").replace(/\,/g,"").replace(/name\:/g,""); 
     EMAIL = EMAIL[0].replace(/\"/g,"").replace(/\,/g,"").replace(/email\:/g,""); 
+    SUBJECT = '親愛的使用者 '+ NAME +' 您好';
+    var TITLE = '超級商城團隊APP上';  
     
-    var EMAILTO = '<html><head><meta http-equiv=\"Cache-Control\" content=\"no-store\"/><meta http-equiv=\"Pragma\" content=\"no-cache\"/><meta http-equiv=\"Expires\" content=\"0\"/></head><body><form action=\"mailto:admin@example.com\" enctype=\"text/plain\" method=\"post\">';
-        EMAILTO +='<p>Name: <input name=\"Name\" type=\"text\" id=\"Name\" size=\"40\" value=\"'+ NAME +'\"></p>';
-        EMAILTO +='<p>E-mail address: <input name=\"E-mail\" type=\"text\" id=\"E-mail\" size=\"40\" value=\"'+ EMAIL +'\"></p>';
+    var EMAILTO = '<html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"><meta http-equiv=\"Cache-Control\" content=\"no-store\"/><meta http-equiv=\"Pragma\" content=\"no-cache\"/><meta http-equiv=\"Expires\" content=\"0\"/><script src=\"sendmail.js\"></script></head><body><form name=\"mail\" action=\"mailto:superwinter@gmailicom?subject='+SUBJECT+'\" enctype=\"text/plain\" method=\"post\" onSubmit=\"return sendmail();windows.close()\" >';
+        EMAILTO +='<p>Name: '+ NAME +'</p>';
+        EMAILTO +='<p>E-mail address: '+ EMAIL +'</p>';
         EMAILTO +='<p>Comment:</p>';
-        EMAILTO +='<p><textarea name=\"Comment\" cols=\"55\" rows=\"5\" id=\"Comment\">'+ FEEDBACK +'</textarea></p>';
-        EMAILTO +='<p><input type=\"submit\" name=\"Submit\" value=\"Submit\"></p></form></body></html>';
-    var newWindow = window.open('', '_blank', 'location=yes', 'clearcache=yes');
-    newWindow.document.write(EMAILTO);
+        EMAILTO +='<p>'+ FEEDBACK[1] +'</p>';
+        EMAILTO +='<p><textarea hidden name=\"'+encodeURI('使用者留言')+'\" cols=\"55\" rows=\"5\" id=\"Comment\">'+ encodeURI(FEEDBACK[1]) +'\n\n'+ encodeURI(TITLE) +'</textarea></p>';
+        EMAILTO +='<p><input type=\"submit\" value=\"Submit\"></p></form></body></html>';
+    //var newWindow = window.open('', '_blank', 'width=600,height=600,location=yes,location=yes', 'clearcache=yes');
+    //newWindow.document.write(EMAILTO);
+    var BODY = '>>>>>' + encodeURI(FEEDBACK[1]) + encodeURI('\r\n\r\n\r\n') + encodeURI(TITLE); 
+    sendmail(NAME, EMAIL, SUBJECT, BODY); 
 }
 
 chrome.runtime.sendMessage({
